@@ -7,55 +7,129 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   </head>
   <body>
-    <header class="topbar">
-      <div>
-        <h1>Codefresh → GitHub Actions Workbench</h1>
-        <p>Paste a pipeline, tweak translated steps, and review migration warnings before you trust the output.</p>
-      </div>
-      <div class="toolbar">
-        <label>Workflow name <input id="workflow-name" type="text" value="Converted from Codefresh"></label>
-        <label class="file-picker">Upload YAML <input id="file-input" type="file" accept=".yml,.yaml,text/yaml,text/x-yaml"></label>
-      </div>
-    </header>
-
-    <main class="layout">
-      <section class="panel panel-source">
-        <div class="panel-header">
-          <h2>Codefresh YAML</h2>
-          <button id="load-sample" type="button">Load sample</button>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Local migration workbench</span>
+          <h1>Codefresh → GitHub Actions</h1>
+          <p>
+            Paste a pipeline, review the conversion live, and edit each generated step before you trust the output.
+            Conservative by default. Fast to inspect. No frontend build chain nonsense.
+          </p>
         </div>
-        <textarea id="source-yaml" spellcheck="false"></textarea>
-        <p id="status-line" class="status"></p>
-      </section>
 
-      <section class="panel panel-output">
-        <div class="panel-header">
-          <h2>GitHub Actions YAML</h2>
-          <button id="copy-output" type="button">Copy output</button>
-        </div>
-        <pre id="workflow-output"></pre>
-      </section>
+        <div class="hero-actions card-like">
+          <label class="field-group">
+            <span class="field-label">Workflow name</span>
+            <input id="workflow-name" type="text" value="Converted from Codefresh">
+          </label>
 
-      <section class="panel panel-steps">
-        <div class="panel-header">
-          <h2>Per-step review</h2>
-        </div>
-        <div id="step-list" class="step-list"></div>
-      </section>
-
-      <section class="panel panel-meta">
-        <div class="meta-grid">
-          <div>
-            <h2>Warnings</h2>
-            <ul id="warnings-list" class="plain-list"></ul>
-          </div>
-          <div>
-            <h2>Checklist</h2>
-            <ul id="checklist-list" class="plain-list"></ul>
+          <div class="toolbar-actions">
+            <label class="file-picker button secondary">
+              <span>Upload YAML</span>
+              <input id="file-input" type="file" accept=".yml,.yaml,text/yaml,text/x-yaml">
+            </label>
+            <button id="load-sample" type="button" class="button secondary">Load sample</button>
+            <button id="copy-output" type="button" class="button">Copy output</button>
           </div>
         </div>
+      </header>
+
+      <section class="summary-strip" aria-label="Workbench summary">
+        <article class="summary-card emphasis">
+          <span class="summary-label">Workbench status</span>
+          <strong id="summary-status">Ready</strong>
+          <span id="summary-substatus" class="summary-note">Paste Codefresh YAML to start.</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Steps</span>
+          <strong id="summary-step-count">0</strong>
+          <span class="summary-note">Detected source steps</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Warnings</span>
+          <strong id="summary-warning-count">0</strong>
+          <span class="summary-note">Pipeline-level review items</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Checklist</span>
+          <strong id="summary-checklist-count">0</strong>
+          <span class="summary-note">Follow-up actions</span>
+        </article>
       </section>
-    </main>
+
+      <div id="status-banner" class="status-banner" data-state="idle">
+        <div>
+          <strong id="status-title">Ready</strong>
+          <p id="status-line" class="status-copy">Paste Codefresh YAML to start.</p>
+        </div>
+        <span id="status-pill" class="status-pill">Idle</span>
+      </div>
+
+      <main class="layout">
+        <section class="panel panel-source">
+          <div class="panel-header">
+            <div>
+              <span class="panel-kicker">Input</span>
+              <h2>Codefresh YAML</h2>
+            </div>
+            <span class="panel-hint">Local file or pasted config</span>
+          </div>
+          <div class="editor-frame">
+            <textarea id="source-yaml" spellcheck="false" aria-label="Codefresh YAML source"></textarea>
+          </div>
+        </section>
+
+        <section class="panel panel-output">
+          <div class="panel-header">
+            <div>
+              <span class="panel-kicker">Output</span>
+              <h2>GitHub Actions YAML</h2>
+            </div>
+            <span class="panel-hint">Generated from current overrides</span>
+          </div>
+          <div class="output-frame">
+            <pre id="workflow-output"></pre>
+          </div>
+        </section>
+
+        <aside class="panel panel-sidebar">
+          <div class="panel-header compact">
+            <div>
+              <span class="panel-kicker">Review</span>
+              <h2>Migration signals</h2>
+            </div>
+          </div>
+
+          <div class="stack-block">
+            <div class="section-heading-row">
+              <h3>Warnings</h3>
+              <span id="warnings-badge" class="count-badge">0</span>
+            </div>
+            <ul id="warnings-list" class="signal-list"></ul>
+          </div>
+
+          <div class="stack-block">
+            <div class="section-heading-row">
+              <h3>Checklist</h3>
+              <span id="checklist-badge" class="count-badge neutral">0</span>
+            </div>
+            <ul id="checklist-list" class="signal-list"></ul>
+          </div>
+        </aside>
+
+        <section class="panel panel-steps">
+          <div class="panel-header">
+            <div>
+              <span class="panel-kicker">Step review</span>
+              <h2>Per-step translation workbench</h2>
+            </div>
+            <span class="panel-hint">Edit generated fields in place. Changes re-translate live.</span>
+          </div>
+          <div id="step-list" class="step-list"></div>
+        </section>
+      </main>
+    </div>
 
     <script>
       window.CF2GHA_SAMPLE = `version: "1.0"

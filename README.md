@@ -91,11 +91,13 @@ cf2gha-web
 
 Then open <http://127.0.0.1:5000>.
 
-The UI is local-only and intentionally simple:
+The UI is local-only and intentionally lightweight, but the workbench is a bit more structured now:
 
-- left: source Codefresh YAML
-- right: generated GitHub Actions YAML
-- below: editable per-step translation review, warnings, rationale, and checklist
+- source and generated workflow panes stay side by side on larger screens
+- a summary/status strip shows step counts, warning volume, and translation state
+- a review sidebar keeps pipeline warnings and checklist items visible while you work
+- per-step review cards expose editable `name` / `uses` / `run` fields plus rationale, hints, special handling, and warnings
+- edits still apply in real time through the existing `/api/translate` flow; no frontend build system was added
 
 ## CLI usage
 
