@@ -10,6 +10,7 @@ readme = "README.md"
 authors = [{name = "OpenClaw"}]
 requires-python = ">=3.10"
 dependencies = [
+  "Flask>=3.0",
   "PyYAML>=6.0",
 ]
 
@@ -20,9 +21,14 @@ dev = [
 
 [project.scripts]
 cf2gha = "cf2gha.cli:main"
+cf2gha-web = "cf2gha.web:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.package-data]
+cf2gha = ["templates/*.html", "static/*.css", "static/*.js"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

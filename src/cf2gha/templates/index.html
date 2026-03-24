@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Codefresh → GitHub Actions Workbench</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Codefresh → GitHub Actions Workbench</h1>
+        <p>Paste a pipeline, tweak translated steps, and review migration warnings before you trust the output.</p>
+      </div>
+      <div class="toolbar">
+        <label>Workflow name <input id="workflow-name" type="text" value="Converted from Codefresh"></label>
+        <label class="file-picker">Upload YAML <input id="file-input" type="file" accept=".yml,.yaml,text/yaml,text/x-yaml"></label>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel panel-source">
+        <div class="panel-header">
+          <h2>Codefresh YAML</h2>
+          <button id="load-sample" type="button">Load sample</button>
+        </div>
+        <textarea id="source-yaml" spellcheck="false"></textarea>
+        <p id="status-line" class="status"></p>
+      </section>
+
+      <section class="panel panel-output">
+        <div class="panel-header">
+          <h2>GitHub Actions YAML</h2>
+          <button id="copy-output" type="button">Copy output</button>
+        </div>
+        <pre id="workflow-output"></pre>
+      </section>
+
+      <section class="panel panel-steps">
+        <div class="panel-header">
+          <h2>Per-step review</h2>
+        </div>
+        <div id="step-list" class="step-list"></div>
+      </section>
+
+      <section class="panel panel-meta">
+        <div class="meta-grid">
+          <div>
+            <h2>Warnings</h2>
+            <ul id="warnings-list" class="plain-list"></ul>
+          </div>
+          <div>
+            <h2>Checklist</h2>
+            <ul id="checklist-list" class="plain-list"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      window.CF2GHA_SAMPLE = `version: "1.0"
+variables:
+  IMAGE_NAME: ghcr.io/acme/demo:latest
+stages:
+  - clone
+  - build
+steps:
+  clone_repo:
+    type: git-clone
+    repo: acme/demo
+    revision: main
+  tf_plan:
+    type: freestyle
+    stage: build
+    image: google/cloud-sdk:slim
+    commands:
+      - gcloud auth list
+      - terraform init
+      - terraform plan
+  publish_artifacts:
+    type: freestyle
+    stage: build
+    image: releases-docker.jfrog.io/jfrog/jfrog-cli-v2-jf
+    commands:
+      - jf rt ping
+      - terraform apply -auto-approve
+`;
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

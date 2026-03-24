@@ -18,12 +18,15 @@ def test_translate_freestyle_and_top_level_variables():
 
     result = translate_pipeline(pipeline)
     job = result.workflow["jobs"]["codefresh_migration"]
+    step = result.steps[0]
 
     assert job["env"] == {"APP_ENV": "test", "DEBUG": "True"}
     assert job["steps"][0]["name"] == "unit_tests"
     assert "pytest -q" in job["steps"][0]["run"]
     assert job["steps"][0]["env"] == {"PYTHONUNBUFFERED": "1"}
+    assert step.rationale
     assert result.warnings == []
+
 
 
 def test_translate_checkout_build_push_and_emit_warnings():
@@ -49,6 +52,7 @@ def test_translate_checkout_build_push_and_emit_warnings():
     }
 
 
+
 def test_translate_unsupported_step_as_placeholder():
     pipeline = {
         "steps": {
@@ -66,3 +70,56 @@ def test_translate_unsupported_step_as_placeholder():
     assert 'TODO: Unsupported Codefresh step type: parallel' in step["run"]
     assert any(w.code == "unsupported_step_type" for w in result.warnings)
     assert any(w.code == "unknown_stage" for w in result.warnings)
+
+
+
+def test_special_image_handling_for_gcloud_and_jfrog_with_terraform():
+    pipeline = {
+        "steps": {
+            "tf_plan": {
+                "type": "freestyle",
+                "image": "google/cloud-sdk:slim",
+                "commands": ["gcloud auth list", "terraform init", "terraform plan"],
+            },
+            "publish": {
+                "type": "freestyle",
+                "image": "releases-docker.jfrog.io/jfrog/jfrog-cli-v2-jf",
+                "commands": ["jf rt ping", "terraform apply -auto-approve"],
+            },
+        }
+    }
+
+    result = translate_pipeline(pipeline)
+
+    tf_plan = result.steps[0]
+    publish = result.steps[1]
+
+    assert "setup-gcloud" in " ".join(tf_plan.translation_hints)
+    assert "setup-terraform" in " ".join(tf_plan.translation_hints)
+    assert any(tool == "terraform" for tool in tf_plan.detected_tools)
+    assert any("Terraform commands were detected" in line for line in tf_plan.special_handling)
+    assert "Install/configure JFrog CLI explicitly" in " ".join(publish.translation_hints)
+    assert "setup-terraform" in " ".join(publish.translation_hints)
+    assert any(tool == "jfrog-cli" for tool in publish.detected_tools)
+
+
+
+def test_step_overrides_replace_generated_fields():
+    pipeline = {
+        "steps": {
+            "demo": {"type": "freestyle", "commands": ["echo hi"]},
+        }
+    }
+
+    result = translate_pipeline(
+        pipeline,
+        step_overrides={
+            "demo": {"name": "Renamed demo", "run": "echo custom", "env": {"HELLO": "world"}},
+        },
+    )
+
+    step = result.steps[0]
+    assert step.gha_step["name"] == "Renamed demo"
+    assert step.gha_step["run"] == "echo custom"
+    assert step.gha_step["env"] == {"HELLO": "world"}
+    assert any("edited in the workbench" in line for line in step.rationale)
